@@ -1,6 +1,7 @@
 import express from "express"
 import cors from "cors"
 import {connectDB} from "./config/db.js";
+import yarnRouter from "./routes/yarnRoute.js";
 
 
 
@@ -18,6 +19,9 @@ app.use(cors())
 
 // db connection
 connectDB();
+
+//api end points
+app.use("/api/yarn",yarnRouter)
 
 
 app.get("/",(req,res)=>{
