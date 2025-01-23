@@ -1,6 +1,6 @@
 import express from "express";
 
-import {addYarn} from "../controllers/yarnController.js";
+import {addYarn,listYarn,removeYarn} from "../controllers/yarnController.js";
 import multer from "multer"
 
 
@@ -18,6 +18,9 @@ const upload = multer({storage:storage})
 
 
 yarnRouter.post("/add",upload.single("image"),addYarn)
+yarnRouter.get("/list",listYarn)
+yarnRouter.post("/remove",removeYarn);
+
 
 
 
