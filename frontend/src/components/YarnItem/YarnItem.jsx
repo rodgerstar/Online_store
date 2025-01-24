@@ -4,12 +4,13 @@ import { assets } from "../../assets/assets.js";
 import { StoreContext } from "../../Context/StoreContext.jsx";
 
 const YarnItem = ({ id, name, price, description, image }) => {
-    const { cartItems, addToCart, removeFromCart } = useContext(StoreContext);
+
+    const { cartItems, addToCart, removeFromCart,url} = useContext(StoreContext);
 
     return (
         <div className='yarn-item'>
             <div className="yarn-item-img-container">
-                <img className='yarn-item-image' src={image} alt=""/>
+                <img className='yarn-item-image' src={url+"/images/"+image} alt=""/>
                 {!cartItems?.[id]
                     ? <img className='add' onClick={() => addToCart(id)} src={assets.add_icon_white} alt=""/>
                     : <div className='yarn-item-counter'>

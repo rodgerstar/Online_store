@@ -1,6 +1,7 @@
 // StoreContextProvider.js
 import {createContext, useEffect, useState} from "react";
-import {yarn_piece} from "../assets/assets.js";
+import axios from "axios";
+
 
 export const StoreContext = createContext(null);
 
@@ -9,6 +10,7 @@ const StoreContextProvider = (props) => {
     const [cartItems, setCartItems] = useState({});
     const url = "http://localhost:4000"
     const [token,setToken] = useState("");
+    const [yarn_piece, setYarnPiece] = useState([])
 
     const addToCart = (itemId) => {
         if (!cartItems[itemId]) {
@@ -34,10 +36,20 @@ const StoreContextProvider = (props) => {
         return totalAmount;
     }
 
+    const fetchYarnPiece = async () =>{
+        const response = await axios.get(url+"/api/yarn/list")
+        setYarnPiece(response.data.data)
+    }
+
     useEffect(() => {
-        if (localStorage.getItem("token")) {
+
+        async function loadData() {
+            await fetchYarnPiece();
+            if (localStorage.getItem("token")) {
             setToken(localStorage.getItem("token"));
+            }
         }
+        loadData();
     }, []);
 
     const contextValue = {
