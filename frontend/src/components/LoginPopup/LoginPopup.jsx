@@ -22,28 +22,34 @@ const LoginPopup = ({setShowLogin}) => {
         setData(data=>({...data,[name]:value}))
     }
 
-    const onLogin = async (event) =>{
-        event.preventDefault()
-        let newUrl = url;
-        if (currState==="login") {
-            newUrl += "/api/user/login"
-        }
-        else {
-            newUrl += "/api/user/register"
-        }
+    const onLogin = async (event) => {
+    event.preventDefault();
 
-        const response = await axios.post(newUrl,data)
+    let newUrl = url;
+    if (currState === "Login") { // Fixed case sensitivity
+        newUrl += "/api/user/login";
+    } else {
+        newUrl += "/api/user/register";
+    }
+
+    console.log("Current State:", currState); // Debugging log
+    console.log("API URL:", newUrl);         // Debugging log
+
+    try {
+        const response = await axios.post(newUrl, data);
 
         if (response.data.success) {
             setToken(response.data.token);
-            localStorage.setItem("token",response.data.token)
-            setShowLogin(false)
+            localStorage.setItem("token", response.data.token);
+            setShowLogin(false);
+        } else {
+            alert(response.data.message);
         }
-        else {
-            alert(response.data.message)
-        }
-
+    } catch (error) {
+        console.error("Error during API call:", error);
+        alert("An error occurred. Please try again.");
     }
+};
 
     return (
         <div className='login-popup'>

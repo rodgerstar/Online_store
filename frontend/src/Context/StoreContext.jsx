@@ -1,5 +1,5 @@
 // StoreContextProvider.js
-import {createContext, useState} from "react";
+import {createContext, useEffect, useState} from "react";
 import {yarn_piece} from "../assets/assets.js";
 
 export const StoreContext = createContext(null);
@@ -33,6 +33,12 @@ const StoreContextProvider = (props) => {
         }
         return totalAmount;
     }
+
+    useEffect(() => {
+        if (localStorage.getItem("token")) {
+            setToken(localStorage.getItem("token"));
+        }
+    }, []);
 
     const contextValue = {
         yarn_piece,
