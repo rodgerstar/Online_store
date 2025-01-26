@@ -1,12 +1,11 @@
-import React, {useContext, useState} from "react";
+import React, { useContext, useState } from "react";
 import './PlaceOrder.css';
-import {StoreContext} from "../../Context/StoreContext.jsx";
+import { StoreContext } from "../../Context/StoreContext.jsx";
 import axios from "axios";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 const PlaceOrder = () => {
-
-    const {getTotalCartAmount, token, yarn_piece, cartItems, url} = useContext(StoreContext);
-
+    const { getTotalCartAmount, token, yarn_piece, cartItems, url } = useContext(StoreContext);
     const [data, setData] = useState({
         firstName: "",
         lastName: "",
@@ -18,10 +17,12 @@ const PlaceOrder = () => {
         phone: ""
     });
 
+    const [orderData, setOrderData] = useState(null); // Holds the order details after placing the order
+
     const onChangeHandler = (event) => {
         const name = event.target.name;
         const value = event.target.value;
-        setData(data => ({...data, [name]: value}));
+        setData((data) => ({ ...data, [name]: value }));
     };
 
     const placeOrder = async (event) => {
@@ -34,90 +35,102 @@ const PlaceOrder = () => {
                 orderItems.push(itemInfo);
             }
         });
-        let orderData = {
+
+        let orderDetails = {
             address: data,
             items: orderItems,
             amount: getTotalCartAmount() + 200,
         };
-        let response = await axios.post(url + "/api/order/place", orderData, {headers: {token}});
-        if (response.data.success) {
-            const {session_url} = response.data;
-            window.location.replace(session_url);
-        } else {
-            alert("Error");
+
+        setOrderData(orderDetails); // Store the order data temporarily for PayPal
+
+        try {
+            let response = await axios.post(url + "/api/order/place", orderDetails, { headers: { token } });
+            if (response.data.success) {
+                // Store session URL or any necessary data
+                setOrderData({
+                    ...orderDetails,
+                    sessionUrl: response.data.session_url
+                });
+            } else {
+                alert("Error: Payment session could not be initialized.");
+            }
+        } catch (error) {
+            alert("Error placing the order. Please try again.");
         }
     };
 
     return (
-        <form onSubmit={placeOrder} className='place-order'>
+        <form onSubmit={placeOrder} className="place-order">
             <div className="place-order-left">
                 <p className="title">Delivery Information</p>
                 <div className="multi-fields">
                     <input
                         required
-                        name='firstName'
+                        name="firstName"
                         onChange={onChangeHandler}
                         value={data.firstName}
                         type="text"
-                        placeholder='First Name'
+                        placeholder="First Name"
                         autoComplete="given-name"
                     />
                     <input
                         required
-                        name='lastName'
+                        name="lastName"
                         onChange={onChangeHandler}
                         value={data.lastName}
                         type="text"
-                        placeholder='Last Name'
+                        placeholder="Last Name"
                         autoComplete="family-name"
                     />
                 </div>
                 <input
                     required
-                    name='email'
+                    name="email"
                     onChange={onChangeHandler}
                     value={data.email}
                     type="email"
-                    placeholder='Email Address'
+                    placeholder="Email Address"
                     autoComplete="email"
                 />
                 <input
                     required
-                    name='county'
+                    name="county"
                     onChange={onChangeHandler}
                     value={data.county}
                     type="text"
-                    placeholder='County'
+                    placeholder="County"
                     autoComplete="address-level1"
                 />
                 <input
                     required
-                    name='town'
+                    name="town"
                     onChange={onChangeHandler}
                     value={data.town}
                     type="text"
-                    placeholder='Town'
+                    placeholder="Town"
                     autoComplete="address-level2"
                 />
                 <input
                     required
-                    name='zipcode'
+                    name="zipcode"
                     onChange={onChangeHandler}
                     value={data.zipcode}
                     type="text"
-                    placeholder='Zip Code'
+                    placeholder="Zip Code"
                     autoComplete="postal-code"
                 />
                 <input
                     required
-                    name='phone'
+                    name="phone"
                     onChange={onChangeHandler}
                     value={data.phone}
                     type="text"
-                    placeholder='Phone'
+                    placeholder="Phone"
                     autoComplete="tel"
                 />
             </div>
+
             <div className="place-order-right">
                 <div className="cart-total">
                     <h2>Cart Total</h2>
@@ -137,7 +150,45 @@ const PlaceOrder = () => {
                             <b>Ksh.{getTotalCartAmount() === 0 ? 0 : getTotalCartAmount() + 200}</b>
                         </div>
                     </div>
-                    <button type='submit'>PROCEED TO PAYMENT</button>
+
+                    <button type="submit">PROCEED TO PAYMENT</button>
+
+                    {/* PayPal Buttons */}
+                    {orderData && orderData.sessionUrl && (
+                        <PayPalScriptProvider options={{ "client-id": "AcqK36516K4PQH18GYQhtvopENIyFYUbDG_QBPJvCli6f9n_F4BlHnq1GvChL8mKulWVpWf0pAszil91" }}>
+                            <PayPalButtons
+                                createOrder={(data, actions) => {
+                                    return actions.order.create({
+                                        purchase_units: [
+                                            {
+                                                amount: {
+                                                    value: orderData.amount.toString(), // Total amount
+                                                },
+                                                shipping: {
+                                                    address: {
+                                                        address_line_1: orderData.address.town,
+                                                        admin_area_2: orderData.address.county,
+                                                        postal_code: orderData.address.zipcode,
+                                                        country_code: "KE",
+                                                    },
+                                                },
+                                            },
+                                        ],
+                                    });
+                                }}
+                                onApprove={(data, actions) => {
+                                    return actions.order.capture().then((details) => {
+                                        // Handle success payment here
+                                        axios.post(url + "/api/order/verify", { orderId: orderData._id, success: "true" });
+                                        alert("Payment Successful!");
+                                    });
+                                }}
+                                onError={(err) => {
+                                    alert("Payment failed: " + err.message);
+                                }}
+                            />
+                        </PayPalScriptProvider>
+                    )}
                 </div>
             </div>
         </form>
